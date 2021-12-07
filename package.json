@@ -46,11 +46,11 @@
     "react-dom": "^16.8.6"
   },
   "scripts": {
-    "clean": "rimraf dist es6 .rts2_cache* sample/.cache sample/dist",
+    "clean": "rimraf dist .rts2_cache* sample/.cache sample/dist",
     "test": "jest",
     "build": "microbundle --globals react=React,react-dom=ReactDom",
     "example": "parcel sample/index.html",
-    "dev": "tsc -p tsconfig.es6.json -w",
+    "dev": "tsc -p tsconfig.json -w",
     "prepublish": "yarn clean && yarn build"
   },
   "jest": {
