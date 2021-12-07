@@ -13,14 +13,13 @@ export function createServiceContext(): ServiceCtx {
       return services;
     },
     get(serviceType, key, initOptions) {
-      const serviceName = serviceType.serviceName + (key ? `_${key}` : '');
+      const $name = serviceType.serviceName + (key ? `_${key}` : '');
 
-      return (services[serviceName] ||
-        (services[serviceName] = new serviceType({ serviceContext: this, key, serviceName }, initOptions))) as any;
+      return (services[$name] || (services[$name] = new serviceType({ $ctx: this, $key: key, $name }, initOptions))) as any;
     },
-    disposeService(serviceName: string) {
+    dispose(serviceName: string) {
       const service = services[serviceName];
-      if (service && service['disposeService']) service['disposeService']();
+      if (service && service['$onDispose']) service['$onDispose']();
       delete services[serviceName];
     },
   };
@@ -83,14 +82,14 @@ export function useServiceInstance<State, R>(service: Service<State>, selector?:
 }
 
 /**
- * This function can be used as a `serviceLifecycle`
+ * This function can be used as a `$onLifecycle`
  * It will dispose the service and remove it from context when the last subscriber unsubscribes
- * Usefull for short lived services that might only be needed at a certein level of the app
+ * Useful for short-lived services that might only be needed at a certain level of the app
  *
  * ```jsx
  * class AutoDisposable extends Service<{}> {
  *   static serviceName = 'AutoDisposableService';
- *   serviceLifecycle = autoDispose;
+ *   $onLifecycle = autoDispose;
  * }
  *
  * function Comp(){
@@ -101,5 +100,5 @@ export function useServiceInstance<State, R>(service: Service<State>, selector?:
  * @param this
  */
 export function autoDispose(this: Service<any>) {
-  return () => this.serviceContext.disposeService(this.serviceName);
+  return () => this.$ctx.dispose(this.$name);
 }

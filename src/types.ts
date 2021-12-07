@@ -7,7 +7,7 @@ export type ServiceListener<State> = (state: State) => void;
 export interface ServiceType<
   State extends {},
   InitOptions extends any,
-  Se extends Service<State, InitOptions> = Service<State, InitOptions>
+  Se extends Service<State, InitOptions> = Service<State, InitOptions>,
 > {
   new (...args: any[]): Se;
   serviceName: string;
@@ -26,5 +26,5 @@ export interface ServiceCtx {
     key?: string | null,
     initOptions?: InitOptions,
   ): Svc;
-  disposeService(serviceName: string): void;
+  dispose(serviceName: string): void;
 }

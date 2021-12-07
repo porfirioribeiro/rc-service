@@ -2,32 +2,73 @@
 import { ServiceListener, Mutable, ServiceCtx } from './types';
 import { batch } from './batch';
 
-export type ServiceInit = { serviceContext: ServiceCtx; key?: string | null; serviceName: string };
+export interface ServiceInit {
+  /** @see Service.$ctx */
+  $ctx: ServiceCtx;
+  /** @see Service.$key */
+  $key?: string | null;
+  /** @see Service.$ctx */
+  $name: string;
+}
 
 export abstract class Service<State, InitOptions = any> {
+  /** state of this Service */
   state: State;
-  readonly initOptions?: InitOptions;
-  readonly key?: string | null;
-  readonly serviceName: string;
-  readonly serviceContext: ServiceCtx;
+  /** optional key to allow multiple instances of the same service */
+  protected readonly $key?: string | null;
+  /** the name of this service in the ServiceContext ($ctx) */
+  protected readonly $name: string;
+  /** The ServiceContext this Service belongs */
+  protected readonly $ctx: ServiceCtx;
 
-  private _listeners: ServiceListener<any>[] = [];
-  private _stop?: () => void;
+  private _listeners: ServiceListener<any>[];
+  private _stop?(): void;
 
-  protected initState?(initOptions?: InitOptions): State;
-  protected disposeService?(): void;
-  protected serviceLifecycle?(): () => void;
+  /**
+   * Optional callback that will be called when this Service is disposed on the ServiceContext
+   * @see ServiceCtx.dispose
+   */
+  protected $onDispose?(): void;
 
+  /**
+   * Optional callback that will be called the first time this Service is subscribed on the ServiceContext
+   * It may return a function that will be called when the last subscriber unsubscribe
+   * @see autoDispose
+   */
+  protected $onLifecycle?(): () => void;
+
+  // @ts-ignore options might be used by implementations
   constructor(init: ServiceInit, options?: InitOptions) {
-    this.key = init.key;
-    this.serviceContext = init.serviceContext;
-    this.serviceName = init.serviceName;
-    this.initOptions = options;
-    this.state = this.initState ? this.initState(options) : ({} as State);
+    this._listeners = [];
+    this.$key = init.$key;
+    this.$name = init.$name;
+    this.$ctx = init.$ctx;
+    // Object.assign(this,init)
+    this.state = {} as State;
   }
 
+  /**
+   * Set's the internal state of this Service and notify all the subscribers to update
+   * @param newState Partial state to shallow merge with the current state
+   */
   protected setState(newState: Partial<State>): void;
+  /**
+   * Set's the internal state of this Service and notify all the subscribers to update
+   * @param newState Full state that replaces the state with the new state
+   * @param o options to pass
+   * @param {true} o.full full replace
+   * @param {boolean} o.silent do not notify the subscribers
+   * @param {boolean} o.queue execute the notification on queueMicrotask
+   */
   protected setState(newState: State, o: { full: true; silent?: boolean; queue?: boolean }): void;
+  /**
+   * Set's the internal state of this Service and notify all the subscribers to update
+   * @param newState Partial state to merge with the current state
+   * @param o options to pass
+   * @param {false|undefined} o.full full replace
+   * @param {boolean} o.silent do not notify the subscribers
+   * @param {boolean} o.queue execute the notification on queueMicrotask
+   */
   protected setState(newState: Partial<State>, o: { full?: false; silent?: boolean; queue?: boolean }): void;
   protected setState(newState: State, { full, silent, queue }: { full?: boolean; silent?: boolean; queue?: boolean } = {}) {
     const state = full ? newState : Object.assign({}, this.state, newState);
@@ -44,9 +85,13 @@ export abstract class Service<State, InitOptions = any> {
     }
   }
 
+  /**
+   * Subscribe to this service, the listener will be called on every change (setState)
+   * Returns a function that will unsubscribe the Service
+   */
   subscribe(listener: ServiceListener<State>) {
     this._listeners.push(listener);
-    if (this.serviceLifecycle && this._listeners.length === 1) this._stop = this.serviceLifecycle();
+    if (this.$onLifecycle && this._listeners.length === 1) this._stop = this.$onLifecycle();
     return () => {
       this._listeners = this._listeners.filter(l => l !== listener);
       if (this._stop && !this._listeners.length) {
