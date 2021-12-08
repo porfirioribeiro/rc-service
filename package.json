@@ -1,6 +1,6 @@
 {
   "name": "rc-service",
-  "version": "3.0.0-next1",
+  "version": "3.0.0",
   "description": "React Context Services",
   "type": "module",
   "source": "src/index.ts",
