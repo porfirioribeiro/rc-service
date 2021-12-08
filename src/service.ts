@@ -17,11 +17,11 @@ export abstract class Service<State, InitOptions = any> {
   /** optional key to allow multiple instances of the same service */
   protected readonly $key?: string | null;
   /** the name of this service in the ServiceContext ($ctx) */
-  protected readonly $name: string;
+  protected readonly $name!: string;
   /** The ServiceContext this Service belongs */
-  protected readonly $ctx: ServiceCtx;
+  protected readonly $ctx!: ServiceCtx;
 
-  private _listeners: ServiceListener<any>[];
+  private _listeners: ServiceListener<any>[] = [];
   private _stop?(): void;
 
   /**
@@ -39,11 +39,7 @@ export abstract class Service<State, InitOptions = any> {
 
   // @ts-ignore options might be used by implementations
   constructor(init: ServiceInit, options?: InitOptions) {
-    this._listeners = [];
-    this.$key = init.$key;
-    this.$name = init.$name;
-    this.$ctx = init.$ctx;
-    // Object.assign(this,init)
+    Object.assign(this, init);
     this.state = {} as State;
   }
 
