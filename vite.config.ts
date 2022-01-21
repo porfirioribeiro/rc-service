@@ -25,7 +25,6 @@ export default defineConfig({
       external: ['react', 'react-dom'],
       output: {
         globals: {
-          vue: 'React',
           react: 'React',
           'react-dom': 'ReactDom',
         },
